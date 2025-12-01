@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from datetime import datetime
 import models, schemas
 
 # Используем pbkdf2_sha256 вместо bcrypt, чтобы избежать проблем с бинарными зависимостями на Windows
@@ -42,5 +43,61 @@ def update_user_role(db: Session, user_id: int, new_role: str):
         db_user.role = new_role
         db.commit()
         db.refresh(db_user)
+        # Инвалидируем все активные токены пользователя при смене роли
+        revoke_all_user_tokens(db, user_id)
     return db_user
+
+# ===== Функции для работы с токенами =====
+
+def save_token(db: Session, user_id: int, token: str, expires_at: datetime):
+    """Сохраняет токен в БД"""
+    # Сначала инвалидируем все старые токены пользователя
+    revoke_all_user_tokens(db, user_id)
+    
+    # Создаём новый токен
+    db_token = models.AuthToken(
+        user_id=user_id,
+        token=token,
+        is_active=True,
+        expires_at=expires_at
+    )
+    db.add(db_token)
+    db.commit()
+    db.refresh(db_token)
+    return db_token
+
+def get_token(db: Session, token: str):
+    """Получает токен из БД"""
+    return db.query(models.AuthToken).filter(
+        models.AuthToken.token == token,
+        models.AuthToken.is_active == True
+    ).first()
+
+def revoke_token(db: Session, token: str):
+    """Инвалидирует конкретный токен (для logout)"""
+    db_token = db.query(models.AuthToken).filter(models.AuthToken.token == token).first()
+    if db_token:
+        db_token.is_active = False
+        db_token.revoked_at = datetime.utcnow()
+        db.commit()
+    return db_token
+
+def revoke_all_user_tokens(db: Session, user_id: int):
+    """Инвалидирует все токены пользователя (при смене роли или смене пароля)"""
+    db.query(models.AuthToken).filter(
+        models.AuthToken.user_id == user_id,
+        models.AuthToken.is_active == True
+    ).update({
+        "is_active": False,
+        "revoked_at": datetime.utcnow()
+    })
+    db.commit()
+
+def cleanup_expired_tokens(db: Session):
+    """Удаляет истёкшие токены из БД (можно запускать периодически)"""
+    now = datetime.utcnow()
+    db.query(models.AuthToken).filter(
+        models.AuthToken.expires_at < now
+    ).delete()
+    db.commit()
 

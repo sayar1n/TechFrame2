@@ -28,7 +28,7 @@ services:
       - JWT_ALG=${JWT_ALG}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
     volumes:
-      - auth-db-data:/app/data
+      - ./backend/service_auth/data:/app/data
     networks:
       - backend-network
 
@@ -39,7 +39,7 @@ services:
       - JWT_ALG=${JWT_ALG}
       - AUTH_SERVICE_URL=http://auth-service:8001
     volumes:
-      - projects-db-data:/app/data
+      - ./backend/service_projects/data:/app/data
     depends_on:
       - auth-service
     networks:
@@ -53,8 +53,8 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:8001
       - PROJECTS_SERVICE_URL=http://projects-service:8002
     volumes:
-      - defects-db-data:/app/data
-      - defects-attachments:/app/attachments
+      - ./backend/service_defects/data:/app/data
+      - ./backend/service_defects/attachments:/app/attachments
     depends_on:
       - auth-service
       - projects-service
@@ -70,7 +70,7 @@ services:
       - DEFECTS_SERVICE_URL=http://defects-service:8003
       - PROJECTS_SERVICE_URL=http://projects-service:8002
     volumes:
-      - reports-db-data:/app/data
+      - ./backend/service_reports/data:/app/data
     depends_on:
       - auth-service
       - defects-service
@@ -92,10 +92,3 @@ services:
 networks:
   backend-network:
     driver: bridge
-
-volumes:
-  auth-db-data:
-  projects-db-data:
-  defects-db-data:
-  reports-db-data:
-  defects-attachments:

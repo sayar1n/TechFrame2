@@ -19,7 +19,9 @@ setup_logging("auth-service")
 logger = logging.getLogger(__name__)
 
 # Создаём таблицы, если их ещё нет
+print("[AUTH] Creating database tables...")
 models.Base.metadata.create_all(bind=engine)
+print("[AUTH] Tables created: users, auth_tokens")
 
 # Грубая "миграция" для dev:
 # если в существующей таблице users нет нужных колонок, добавляем их через ALTER TABLE,
@@ -99,6 +101,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+    
+    # Проверяем, что токен активен в БД
+    db_token = crud.get_token(db, token)
+    if not db_token or not db_token.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked", headers={"WWW-Authenticate": "Bearer"})
+    
+    # Проверяем, что токен не истёк
+    if db_token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired", headers={"WWW-Authenticate": "Bearer"})
+    
     user = crud.get_user_by_username(db, username=username)
     if user is None:
         raise credentials_exception
@@ -109,8 +121,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     user = crud.get_user_by_username(db, username=form_data.username)
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expires_at = datetime.utcnow() + access_token_expires
     access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    
+    # Сохраняем токен в БД (старые токены автоматически инвалидируются)
+    crud.save_token(db, user.id, access_token, expires_at)
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/auth/register", response_model=schemas.User)
@@ -135,7 +153,14 @@ from fastapi import Query
 async def update_user_role(user_id: int, new_role: str = Query(...), db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     if current_user.role not in ["manager", "admin"]:
         raise HTTPException(status_code=403, detail="Not authorized")
+    # update_user_role автоматически инвалидирует все токены пользователя
     return crud.update_user_role(db, user_id, new_role)
+
+@app.post("/auth/logout")
+async def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Выход из системы - инвалидирует текущий токен"""
+    crud.revoke_token(db, token)
+    return {"message": "Successfully logged out"}
 
 @app.get("/health")
 async def health():
