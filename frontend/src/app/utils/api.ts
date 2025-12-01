@@ -2,6 +2,7 @@ import axios from 'axios';
 import { UserCreate, UserLogin, User, Token, Project, ProjectCreate, Defect, DefectCreate, Comment, CommentCreate, Attachment, AnalyticsSummary, DefectCountByStatus, DefectCountByPriority, DefectCreationTrendItem, ProjectPerformanceItem } from '@/app/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || '/v1'; // Версионирование API
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -12,7 +13,7 @@ export const apiClient = axios.create({
 
 export const loginUser = async (userData: UserLogin): Promise<Token> => {
   const response = await apiClient.post(
-    '/auth/token',
+    `${API_VERSION}/auth/token`,
     new URLSearchParams({
       username: userData.username,
       password: userData.password,
@@ -27,12 +28,12 @@ export const loginUser = async (userData: UserLogin): Promise<Token> => {
 };
 
 export const registerUser = async (userData: UserCreate): Promise<User> => {
-  const response = await apiClient.post('/auth/register', userData);
+  const response = await apiClient.post(`${API_VERSION}/auth/register`, userData);
   return response.data;
 };
 
 export const fetchCurrentUser = async (token: string): Promise<User> => {
-  const response = await apiClient.get('/auth/users/me', {
+  const response = await apiClient.get(`${API_VERSION}/auth/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -41,7 +42,7 @@ export const fetchCurrentUser = async (token: string): Promise<User> => {
 };
 
 export const createProject = async (token: string, userId: number, projectData: ProjectCreate): Promise<Project> => {
-  const response = await apiClient.post('/projects/', projectData, {
+  const response = await apiClient.post(`${API_VERSION}/projects/`, projectData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -50,7 +51,7 @@ export const createProject = async (token: string, userId: number, projectData: 
 };
 
 export const updateProject = async (token: string, projectId: number, projectData: ProjectCreate): Promise<Project> => {
-  const response = await apiClient.put(`/projects/${projectId}`, projectData, {
+  const response = await apiClient.put(`${API_VERSION}/projects/${projectId}`, projectData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -59,7 +60,7 @@ export const updateProject = async (token: string, projectId: number, projectDat
 };
 
 export const deleteProject = async (token: string, projectId: number): Promise<void> => {
-  await apiClient.delete(`/projects/${projectId}`, {
+  await apiClient.delete(`${API_VERSION}/projects/${projectId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -67,7 +68,7 @@ export const deleteProject = async (token: string, projectId: number): Promise<v
 };
 
 export const fetchProjectById = async (token: string, projectId: number): Promise<Project> => {
-  const response = await apiClient.get(`/projects/${projectId}`, {
+  const response = await apiClient.get(`${API_VERSION}/projects/${projectId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -76,7 +77,7 @@ export const fetchProjectById = async (token: string, projectId: number): Promis
 };
 
 export const fetchDefectById = async (token: string, defectId: number): Promise<Defect> => {
-  const response = await apiClient.get(`/defects/${defectId}`, {
+  const response = await apiClient.get(`${API_VERSION}/defects/${defectId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -85,7 +86,7 @@ export const fetchDefectById = async (token: string, defectId: number): Promise<
 };
 
 export const fetchProjects = async (token: string): Promise<Project[]> => {
-  const response = await apiClient.get('/projects/', {
+  const response = await apiClient.get(`${API_VERSION}/projects/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -94,7 +95,7 @@ export const fetchProjects = async (token: string): Promise<Project[]> => {
 };
 
 export const fetchDefects = async (token: string): Promise<Defect[]> => {
-  const response = await apiClient.get('/defects/', {
+  const response = await apiClient.get(`${API_VERSION}/defects/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -103,7 +104,7 @@ export const fetchDefects = async (token: string): Promise<Defect[]> => {
 };
 
 export const createDefect = async (token: string, defectData: DefectCreate): Promise<Defect> => {
-  const response = await apiClient.post('/defects/', defectData, {
+  const response = await apiClient.post(`${API_VERSION}/defects/`, defectData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -112,7 +113,7 @@ export const createDefect = async (token: string, defectData: DefectCreate): Pro
 };
 
 export const updateDefect = async (token: string, defectId: number, defectData: Omit<DefectCreate, 'project_id'>): Promise<Defect> => {
-  const response = await apiClient.put(`/defects/${defectId}`, defectData, {
+  const response = await apiClient.put(`${API_VERSION}/defects/${defectId}`, defectData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -121,7 +122,7 @@ export const updateDefect = async (token: string, defectId: number, defectData: 
 };
 
 export const deleteDefect = async (token: string, defectId: number): Promise<void> => {
-  await apiClient.delete(`/defects/${defectId}`, {
+  await apiClient.delete(`${API_VERSION}/defects/${defectId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -129,7 +130,7 @@ export const deleteDefect = async (token: string, defectId: number): Promise<voi
 };
 
 export const fetchCommentsForDefect = async (token: string, defectId: number): Promise<Comment[]> => {
-  const response = await apiClient.get(`/defects/${defectId}/comments/`, {
+  const response = await apiClient.get(`${API_VERSION}/defects/${defectId}/comments/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -138,7 +139,7 @@ export const fetchCommentsForDefect = async (token: string, defectId: number): P
 };
 
 export const createComment = async (token: string, defectId: number, commentData: CommentCreate): Promise<Comment> => {
-  const response = await apiClient.post(`/defects/${defectId}/comments/`, commentData, {
+  const response = await apiClient.post(`${API_VERSION}/defects/${defectId}/comments/`, commentData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -147,7 +148,7 @@ export const createComment = async (token: string, defectId: number, commentData
 };
 
 export const fetchAttachmentsForDefect = async (token: string, defectId: number): Promise<Attachment[]> => {
-  const response = await apiClient.get(`/defects/${defectId}/attachments/`, {
+  const response = await apiClient.get(`${API_VERSION}/defects/${defectId}/attachments/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -159,7 +160,7 @@ export const uploadAttachment = async (token: string, defectId: number, file: Fi
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await apiClient.post(`/defects/${defectId}/attachments/`, formData, {
+  const response = await apiClient.post(`${API_VERSION}/defects/${defectId}/attachments/`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data',
@@ -169,7 +170,7 @@ export const uploadAttachment = async (token: string, defectId: number, file: Fi
 };
 
 export const deleteAttachment = async (token: string, defectId: number, attachmentId: number): Promise<void> => {
-  await apiClient.delete(`/defects/${defectId}/attachments/${attachmentId}`, {
+  await apiClient.delete(`${API_VERSION}/defects/${defectId}/attachments/${attachmentId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -177,7 +178,7 @@ export const deleteAttachment = async (token: string, defectId: number, attachme
 };
 
 export const fetchUsers = async (token: string): Promise<User[]> => {
-  const response = await apiClient.get('/auth/users', {
+  const response = await apiClient.get(`${API_VERSION}/auth/users`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -187,7 +188,7 @@ export const fetchUsers = async (token: string): Promise<User[]> => {
 
 export const updateUserRole = async (token: string, userId: number, newRole: "manager" | "engineer" | "observer"): Promise<User> => {
   const response = await apiClient.put(
-    `/auth/users/${userId}/role?new_role=${newRole}`,
+    `${API_VERSION}/auth/users/${userId}/role?new_role=${newRole}`,
     undefined,
     {
       headers: {
@@ -203,7 +204,7 @@ export const exportDefectsToCsvExcel = async (
   format: "csv" | "xlsx",
   filters?: Record<string, string | number | boolean | null | undefined>
 ): Promise<Blob> => {
-  const response = await apiClient.get('/reports/defects/export', {
+  const response = await apiClient.get(`${API_VERSION}/reports/defects/export`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -216,7 +217,7 @@ export const exportDefectsToCsvExcel = async (
 // Analytics API functions
 export const fetchAnalyticsSummary = async (token: string, startDate?: string, endDate?: string): Promise<AnalyticsSummary> => {
   const params = { start_date: startDate, end_date: endDate };
-  const response = await apiClient.get('/reports/analytics/summary', {
+  const response = await apiClient.get(`${API_VERSION}/reports/analytics/summary`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -227,7 +228,7 @@ export const fetchAnalyticsSummary = async (token: string, startDate?: string, e
 
 export const fetchStatusDistribution = async (token: string, startDate?: string, endDate?: string): Promise<DefectCountByStatus[]> => {
   const params = { start_date: startDate, end_date: endDate };
-  const response = await apiClient.get('/reports/analytics/status-distribution', {
+  const response = await apiClient.get(`${API_VERSION}/reports/analytics/status-distribution`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -238,7 +239,7 @@ export const fetchStatusDistribution = async (token: string, startDate?: string,
 
 export const fetchPriorityDistribution = async (token: string, startDate?: string, endDate?: string): Promise<DefectCountByPriority[]> => {
   const params = { start_date: startDate, end_date: endDate };
-  const response = await apiClient.get('/reports/analytics/priority-distribution', {
+  const response = await apiClient.get(`${API_VERSION}/reports/analytics/priority-distribution`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -249,7 +250,7 @@ export const fetchPriorityDistribution = async (token: string, startDate?: strin
 
 export const fetchCreationTrend = async (token: string, days: number = 30): Promise<DefectCreationTrendItem[]> => {
   const params = { days: days };
-  const response = await apiClient.get('/reports/analytics/creation-trend', {
+  const response = await apiClient.get(`${API_VERSION}/reports/analytics/creation-trend`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -260,7 +261,7 @@ export const fetchCreationTrend = async (token: string, days: number = 30): Prom
 
 export const fetchProjectPerformance = async (token: string, startDate?: string, endDate?: string): Promise<ProjectPerformanceItem[]> => {
   const params = { start_date: startDate, end_date: endDate };
-  const response = await apiClient.get('/reports/analytics/project-performance', {
+  const response = await apiClient.get(`${API_VERSION}/reports/analytics/project-performance`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

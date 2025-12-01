@@ -1,6 +1,7 @@
 import { UserLogin, UserCreate, Token, User } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || '/v1'; // Версионирование API
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -37,7 +38,7 @@ export const loginUser = async (data: UserLogin): Promise<Token> => {
   form_data.append('username', data.username);
   form_data.append('password', data.password);
 
-  const response = await fetch(`${API_BASE_URL}/auth/token`, {
+  const response = await fetch(`${API_BASE_URL}${API_VERSION}/auth/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -64,14 +65,14 @@ export const loginUser = async (data: UserLogin): Promise<Token> => {
 };
 
 export const registerUser = async (data: UserCreate): Promise<User> => {
-  return fetchApi<User>('/auth/register', {
+  return fetchApi<User>(`${API_VERSION}/auth/register`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
 export const getMe = async (token: string): Promise<User> => {
-  return fetchApi<User>('/auth/users/me', {
+  return fetchApi<User>(`${API_VERSION}/auth/users/me`, {
     method: 'GET',
     token: token,
   });
