@@ -1,17 +1,37 @@
 import os
 import httpx
-from fastapi import FastAPI, Depends, HTTPException, status
+import uuid
+import logging
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import crud, models, schemas
 from database import engine, SessionLocal
 
+logger = logging.getLogger(__name__)
+
+# Middleware для X-Request-ID
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+        logger.info(f"[{request_id}] {request.method} {request.url.path}")
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        logger.info(f"[{request_id}] Response: {response.status_code}")
+        return response
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Projects Service", version="1.0.0")
+
+# Добавляем middleware для трассировки
+app.add_middleware(RequestIDMiddleware)
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")

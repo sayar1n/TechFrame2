@@ -14,13 +14,22 @@ async function fetchApi<T>(url: string, options?: FetchOptions): Promise<T> {
   };
 
   const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+  const responseData = await response.json();
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Что-то пошло не так');
+    // Обрабатываем ошибки в новом формате {success: false, error: {...}}
+    if (responseData.error) {
+      throw new Error(responseData.error.message || 'Что-то пошло не так');
+    }
+    throw new Error(responseData.detail || 'Что-то пошло не так');
   }
 
-  return response.json();
+  // Если ответ в новом формате {success: true, data: {...}}, извлекаем data
+  if (responseData.success === true && responseData.data) {
+    return responseData.data;
+  }
+
+  return responseData;
 }
 
 export const loginUser = async (data: UserLogin): Promise<Token> => {
@@ -36,11 +45,22 @@ export const loginUser = async (data: UserLogin): Promise<Token> => {
     body: form_data,
   });
 
+  const responseData = await response.json();
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Ошибка входа');
+    // Обрабатываем ошибки в новом формате
+    if (responseData.error) {
+      throw new Error(responseData.error.message || 'Ошибка входа');
+    }
+    throw new Error(responseData.detail || 'Ошибка входа');
   }
-  return response.json();
+
+  // Если ответ в новом формате {success: true, data: {...}}, извлекаем data
+  if (responseData.success === true && responseData.data) {
+    return responseData.data;
+  }
+
+  return responseData;
 };
 
 export const registerUser = async (data: UserCreate): Promise<User> => {

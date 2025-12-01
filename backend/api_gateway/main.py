@@ -17,7 +17,7 @@ ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",
 
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-PUBLIC_ROUTES = ["/", "/auth/register", "/auth/token", "/docs", "/openapi.json", "/redoc"]
+PUBLIC_ROUTES = ["/", "/auth/register", "/auth/token", "/v1/auth/register", "/v1/auth/token", "/docs", "/openapi.json", "/redoc"]
 
 async def verify_token(request: Request):
     auth_header = request.headers.get("Authorization")
@@ -119,4 +119,32 @@ async def reports_proxy(request: Request, path: str = ""):
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# ==================== API v1 (версионирование) ====================
+
+@app.api_route("/v1/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def auth_proxy_v1(request: Request, path: str = ""):
+    """API v1: Auth endpoints"""
+    public_auth_paths = ["register", "token"]
+    require_auth = path not in public_auth_paths
+    target_path = f"/auth/{path}" if path else "/auth/"
+    return await proxy_request(request, AUTH_SERVICE_URL, target_path, require_auth=require_auth)
+
+@app.api_route("/v1/projects/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def projects_proxy_v1(request: Request, path: str = ""):
+    """API v1: Projects endpoints"""
+    target_path = f"/projects/{path}" if path else "/projects/"
+    return await proxy_request(request, PROJECTS_SERVICE_URL, target_path, require_auth=True)
+
+@app.api_route("/v1/defects/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def defects_proxy_v1(request: Request, path: str = ""):
+    """API v1: Defects endpoints"""
+    target_path = f"/defects/{path}" if path else "/defects/"
+    return await proxy_request(request, DEFECTS_SERVICE_URL, target_path, require_auth=True)
+
+@app.api_route("/v1/reports/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def reports_proxy_v1(request: Request, path: str = ""):
+    """API v1: Reports endpoints"""
+    target_path = f"/reports/{path}" if path else "/reports/"
+    return await proxy_request(request, REPORTS_SERVICE_URL, target_path, require_auth=True)
 

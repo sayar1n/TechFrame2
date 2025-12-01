@@ -1,14 +1,16 @@
 import logging
 import os
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import crud, models, schemas
 from database import engine, SessionLocal
@@ -17,6 +19,23 @@ from logging_config import setup_logging
 # Логирование в файл backend/logs/auth-service.log
 setup_logging("auth-service")
 logger = logging.getLogger(__name__)
+
+# Middleware для X-Request-ID
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+        
+        # Логируем начало запроса
+        logger.info(f"[{request_id}] {request.method} {request.url.path}")
+        
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        
+        # Логируем завершение запроса
+        logger.info(f"[{request_id}] Response: {response.status_code}")
+        
+        return response
 
 # Создаём таблицы, если их ещё нет
 print("[AUTH] Creating database tables...")
@@ -65,6 +84,10 @@ except Exception:
     pass
 
 app = FastAPI(title="Auth Service", version="1.0.0")
+
+# Добавляем middleware для трассировки
+app.add_middleware(RequestIDMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

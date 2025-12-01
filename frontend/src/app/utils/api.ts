@@ -283,19 +283,35 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Интерцептор для обработки единого формата ответов {success, data, error}
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Если ответ в новом формате {success: true, data: {...}}, извлекаем data
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      if (response.data.success === true && 'data' in response.data) {
+        response.data = response.data.data; // Извлекаем данные из обёртки
+      } else if (response.data.success === false && 'error' in response.data) {
+        // Преобразуем ошибку в формат, который ожидает frontend
+        const error = response.data.error;
+        throw new Error(error.message || 'Unknown error');
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response) {
-      // Сервер ответил со статусом, отличным от 2xx
-      console.error('API Error Response Data:', JSON.stringify(error.response.data, null, 2));
-      console.error('API Error Status:', error.response.status);
-      console.error('API Error Headers:', error.response.headers);
+      // Обрабатываем ошибки в новом формате
+      if (error.response.data && error.response.data.error) {
+        const apiError = error.response.data.error;
+        console.error('API Error:', apiError.code, '-', apiError.message);
+        error.message = apiError.message;
+      } else {
+        console.error('API Error Response Data:', JSON.stringify(error.response.data, null, 2));
+        console.error('API Error Status:', error.response.status);
+      }
     } else if (error.request) {
-      // Запрос был сделан, но ответа не получено
       console.error('API Error Request:', error.request);
     } else {
-      // Что-то пошло не так при настройке запроса
       console.error('Error Message:', error.message);
     }
     return Promise.reject(error);
