@@ -57,11 +57,12 @@ const EditDefectPage = () => {
     setLoadingData(true); // Устанавливаем загрузку данных
     setError(null);
     try {
-      const payload: Omit<DefectCreate, 'project_id'> = {
+      const payload: DefectCreate = {
         title: defectData.title,
         description: defectData.description,
         priority: defectData.priority,
         status: defectData.status,
+        project_id: defectData.project_id,
         due_date: defectData.due_date,
         assignee_id: defectData.assignee_id,
       };

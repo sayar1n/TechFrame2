@@ -112,7 +112,7 @@ export const createDefect = async (token: string, defectData: DefectCreate): Pro
   return response.data;
 };
 
-export const updateDefect = async (token: string, defectId: number, defectData: Omit<DefectCreate, 'project_id'>): Promise<Defect> => {
+export const updateDefect = async (token: string, defectId: number, defectData: DefectCreate): Promise<Defect> => {
   const response = await apiClient.put(`${API_VERSION}/defects/${defectId}`, defectData, {
     headers: {
       Authorization: `Bearer ${token}`,

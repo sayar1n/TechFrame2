@@ -100,7 +100,10 @@ async def update_defect(defect_id: int, defect: schemas.DefectCreate, db: Sessio
     db_defect = crud.get_defect(db, defect_id=defect_id)
     if db_defect is None:
         raise HTTPException(status_code=404, detail="Defect not found")
-    if db_defect.reporter_id != current_user["id"] and current_user["role"] not in ["manager", "admin"]:
+    # Может редактировать: reporter, assignee, manager, admin
+    if (db_defect.reporter_id != current_user["id"] and 
+        db_defect.assignee_id != current_user["id"] and 
+        current_user["role"] not in ["manager", "admin"]):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Сохраняем старый статус для события

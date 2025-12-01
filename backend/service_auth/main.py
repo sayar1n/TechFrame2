@@ -166,8 +166,7 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
 
 @app.get("/auth/users", response_model=list[schemas.User])
 async def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    if current_user.role not in ["manager", "admin"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # Все авторизованные пользователи могут видеть список пользователей
     return crud.get_users(db, skip=skip, limit=limit)
 
 from fastapi import Query

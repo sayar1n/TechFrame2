@@ -76,6 +76,7 @@ const DefectDetailsPage = () => {
         description: defect.description ?? undefined,
         priority: defect.priority,
         status: newStatus,
+        project_id: defect.project_id,
         due_date: defect.due_date ?? undefined,
         assignee_id: defect.assignee_id ?? undefined,
       });
