@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./backend/api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - PROJECTS_SERVICE_URL=http://projects-service:8002
+      - DEFECTS_SERVICE_URL=http://defects-service:8003
+      - REPORTS_SERVICE_URL=http://reports-service:8004
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALG=${JWT_ALG}
+    depends_on:
+      - auth-service
+      - projects-service
+      - defects-service
+      - reports-service
+    networks:
+      - backend-network
+
+  auth-service:
+    build: ./backend/service_auth
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALG=${JWT_ALG}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+    volumes:
+      - auth-db-data:/app/data
+    networks:
+      - backend-network
+
+  projects-service:
+    build: ./backend/service_projects
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALG=${JWT_ALG}
+      - AUTH_SERVICE_URL=http://auth-service:8001
+    volumes:
+      - projects-db-data:/app/data
+    depends_on:
+      - auth-service
+    networks:
+      - backend-network
+
+  defects-service:
+    build: ./backend/service_defects
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALG=${JWT_ALG}
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - PROJECTS_SERVICE_URL=http://projects-service:8002
+    volumes:
+      - defects-db-data:/app/data
+      - defects-attachments:/app/attachments
+    depends_on:
+      - auth-service
+      - projects-service
+    networks:
+      - backend-network
+
+  reports-service:
+    build: ./backend/service_reports
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALG=${JWT_ALG}
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - DEFECTS_SERVICE_URL=http://defects-service:8003
+      - PROJECTS_SERVICE_URL=http://projects-service:8002
+    volumes:
+      - reports-db-data:/app/data
+    depends_on:
+      - auth-service
+      - defects-service
+      - projects-service
+    networks:
+      - backend-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  projects-db-data:
+  defects-db-data:
+  reports-db-data:
+  defects-attachments:

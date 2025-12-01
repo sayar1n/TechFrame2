@@ -1,0 +1,177 @@
+.reportsContainer {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .loadingMessage, .errorMessage, .accessDenied {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: var(--foreground);
+  }
+
+  .errorMessage {
+    color: var(--danger);
+  }
+
+  .accessDenied {
+    color: var(--warning);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+
+    h1 {
+      margin: 0;
+      color: var(--foreground);
+      font-size: 2.2rem;
+    }
+
+    .headerActions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+
+      .timeRangeSelect {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background-color: var(--table-row);
+        font-size: 1rem;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%20197.3l-13.9-13.9L146.2%20272.3%2018.5%20183.4%204.6%20197.3l141.6%20141.6z%22%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.7em top 50%, 0 0;
+        background-size: 0.65em auto, 100%;
+
+        &:focus {
+          border-color: var(--focus);
+          outline: none;
+          box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+      }
+
+      .exportButton {
+        background-color: var(--success);
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1.2rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+
+        &:hover {
+          filter: brightness(0.9);
+        }
+
+        &:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .summaryCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .card {
+      background-color: var(--panel);
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+
+      .cardTitle {
+        font-size: 1rem;
+        color: var(--foreground);
+        margin-bottom: 0.5rem;
+      }
+
+      .cardValue {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--foreground);
+        margin-bottom: 0.5rem;
+
+        &.overdue {
+          color: var(--danger);
+        }
+        &.completed {
+          color: var(--success);
+        }
+      }
+
+      .cardSubtitle {
+        font-size: 0.9rem;
+        color: var(--foreground);
+      }
+    }
+  }
+
+  .chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(45%, 1fr));
+    gap: 1.5rem;
+
+    .chartCard {
+      background-color: var(--panel);
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: var(--foreground);
+        text-align: center;
+      }
+    }
+  }
+
+  .projectProgressItem {
+    margin-bottom: 1rem;
+
+    p {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      color: var(--foreground);
+    }
+
+      .progressBarContainer {
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        position: relative;
+
+        .progressBarFill {
+          height: 100%;
+          background-color: var(--success);
+          border-radius: 10px;
+          transition: width 0.5s ease-in-out;
+        }
+
+      .progressBarText {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+    }
+  }
+}

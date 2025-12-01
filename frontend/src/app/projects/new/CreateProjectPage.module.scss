@@ -1,0 +1,12 @@
+.createProjectContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+
+  h1 {
+    margin-bottom: 2rem;
+    color: #333;
+    text-align: center;
+  }
+}

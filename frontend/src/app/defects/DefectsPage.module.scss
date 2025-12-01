@@ -1,0 +1,201 @@
+.defectsContainer {
+  padding: 2rem;
+
+  h1 {
+    margin-bottom: 2rem;
+    color: var(--foreground);
+    text-align: center;
+  }
+
+  .headerActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      margin: 0;
+    }
+
+    .createButton {
+      background-color: var(--success);
+      color: #fff;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+
+      &:hover {
+        filter: brightness(0.9);
+      }
+    }
+
+    .editButton {
+      background-color: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+      margin-right: 0.5rem;
+
+      &:hover {
+        background-color: var(--accent-hover);
+      }
+    }
+
+    .deleteButton {
+      background-color: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+
+      &:hover {
+        filter: brightness(0.9);
+      }
+    }
+  }
+
+  .filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+
+    .searchInput {
+      flex-grow: 1;
+      padding: 0.8rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1rem;
+      max-width: 300px;
+      background-color: var(--table-row);
+      color: var(--foreground);
+
+      &:focus {
+        border-color: var(--focus);
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+      }
+    }
+
+    .filterSelect,
+    .sortSelect {
+      padding: 0.8rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1rem;
+      background-color: var(--table-row);
+      color: var(--foreground);
+      cursor: pointer;
+
+      &:focus {
+        border-color: var(--focus);
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+      }
+    }
+  }
+
+  .error {
+    color: var(--danger);
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .defectsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+
+    thead {
+      background-color: rgba(30, 102, 255, 0.08);
+
+      th {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        color: var(--foreground);
+        font-weight: 600;
+      }
+    }
+
+    tbody {
+      tr {
+        &:nth-child(even) {
+          background-color: var(--table-row-alt);
+        }
+
+        &:hover {
+          background-color: var(--table-row-hover);
+        }
+
+        td {
+          padding: 1rem;
+          border-bottom: 1px solid var(--border);
+          color: var(--foreground);
+
+          a {
+            text-decoration: none;
+            color: var(--accent);
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+
+      .defectRow {
+        cursor: pointer;
+
+        &:hover {
+          background-color: var(--table-row-hover);
+        }
+      }
+    }
+  }
+
+  .editButton {
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    margin-right: 0.5rem;
+
+    &:hover {
+      background-color: var(--accent-hover);
+    }
+  }
+
+  .deleteButton {
+    background-color: var(--danger);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+
+    &:hover {
+      filter: brightness(0.9);
+    }
+  }
+}

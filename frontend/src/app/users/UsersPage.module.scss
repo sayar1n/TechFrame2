@@ -1,0 +1,79 @@
+.usersContainer {
+  padding: 2rem;
+
+  h1 {
+    font-size: 2rem;
+    color: var(--foreground);
+    margin-bottom: 1.5rem;
+  }
+
+  .error {
+    color: var(--danger);
+    margin-bottom: 1rem;
+    font-weight: bold;
+  }
+
+  .filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+
+    .searchInput,
+    .filterSelect,
+    .sortSelect {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 1rem;
+      min-width: 150px;
+      background: var(--table-row);
+      color: var(--foreground);
+    }
+
+    .searchInput {
+      flex-grow: 1;
+    }
+  }
+
+  .usersTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(59, 130, 246, 0.15);
+      font-weight: bold;
+      color: var(--foreground);
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: var(--table-row-alt);
+    }
+
+    tbody tr:hover {
+      background-color: var(--table-row-hover);
+    }
+
+    .userRow {
+      cursor: pointer;
+
+      &:hover {
+        background-color: var(--table-row-hover);
+      }
+    }
+  }
+
+  p {
+    margin-top: 1rem;
+    color: var(--foreground);
+  }
+}
