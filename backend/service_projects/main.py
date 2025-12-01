@@ -83,7 +83,7 @@ async def create_project(project: schemas.ProjectCreate, db: Session = Depends(g
     # Публикуем событие "создан заказ"
     publish_project_created(
         project_id=new_project.id,
-        name=new_project.name,
+        title=new_project.title,
         owner_id=current_user["id"]
     )
     
@@ -103,7 +103,7 @@ async def update_project(project_id: int, project: schemas.ProjectCreate, db: Se
     # Публикуем событие "обновлён заказ"
     publish_project_updated(
         project_id=project_id,
-        name=updated_project.name,
+        title=updated_project.title,
         updated_by=current_user["id"]
     )
     

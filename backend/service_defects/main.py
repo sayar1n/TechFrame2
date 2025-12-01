@@ -95,6 +95,7 @@ async def create_defect(defect: schemas.DefectCreate, db: Session = Depends(get_
     return new_defect
 
 @app.put("/defects/{defect_id}", response_model=schemas.Defect)
+@app.patch("/defects/{defect_id}", response_model=schemas.Defect)
 async def update_defect(defect_id: int, defect: schemas.DefectCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     db_defect = crud.get_defect(db, defect_id=defect_id)
     if db_defect is None:

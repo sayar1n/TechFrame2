@@ -59,13 +59,13 @@ def publish_event(event: Event) -> bool:
 
 # Вспомогательные функции для быстрой публикации событий
 
-def publish_project_created(project_id: int, name: str, owner_id: int) -> bool:
+def publish_project_created(project_id: int, title: str, owner_id: int) -> bool:
     """Публикует событие 'создан заказ' (проект)"""
     event = Event(
         event_type="project.created",
         data={
             "project_id": project_id,
-            "name": name,
+            "title": title,
             "owner_id": owner_id
         },
         user_id=owner_id
@@ -73,13 +73,13 @@ def publish_project_created(project_id: int, name: str, owner_id: int) -> bool:
     return publish_event(event)
 
 
-def publish_project_updated(project_id: int, name: str, updated_by: int) -> bool:
+def publish_project_updated(project_id: int, title: str, updated_by: int) -> bool:
     """Публикует событие 'обновлён заказ' (проект)"""
     event = Event(
         event_type="project.updated",
         data={
             "project_id": project_id,
-            "name": name,
+            "title": title,
             "updated_by": updated_by
         },
         user_id=updated_by

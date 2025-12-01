@@ -1,0 +1,728 @@
+{
+  "info": {
+    "name": "Construction Management - Compact Tests",
+    "description": "Компактный набор: 25 тестов с 50 проверками (по 2 на тест)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "defect_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. AUTH TESTS",
+      "item": [
+        {
+          "name": "1.1 Register New User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.collectionVariables.set('username', 'user' + timestamp);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"User has ID\", () => pm.expect(pm.response.json().id).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"email\":\"{{username}}@example.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has access_token\", () => pm.expect(pm.response.json().access_token).to.be.a('string'));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "username", "value": "{{username}}", "type": "text"},
+                {"key": "password", "value": "password123", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "token"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has username\", () => pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/auth/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Login with Wrong Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Has error detail\", () => pm.expect(pm.response.json()).to.have.property('detail'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "username", "value": "{{username}}", "type": "text"},
+                {"key": "password", "value": "wrongpassword", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "token"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Access Without Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "users", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. PROJECTS TESTS",
+      "item": [
+        {
+          "name": "2.1 Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Project has ID\", () => pm.expect(pm.response.json().id).to.be.a('number'));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('project_id', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Строительство моста\",\"description\":\"Мост через реку\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/",
+              "host": ["{{base_url}}"],
+              "path": ["projects", ""]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get All Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/",
+              "host": ["{{base_url}}"],
+              "path": ["projects", ""]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Project by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Project ID matches\", () => pm.expect(pm.response.json().id).to.eql(parseInt(pm.collectionVariables.get('project_id'))));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Update Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Title updated\", () => pm.expect(pm.response.json().title).to.include('Обновлённый'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Обновлённый мост\",\"description\":\"Проект обновлён\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "2.5 Get Non-Existent Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Has error detail\", () => pm.expect(pm.response.json()).to.have.property('detail'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/999999",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "999999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. DEFECTS TESTS",
+      "item": [
+        {
+          "name": "3.1 Create Defect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Defect has ID\", () => pm.expect(pm.response.json().id).to.be.a('number'));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('defect_id', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Foundation crack\",\"description\":\"Found crack\",\"status\":\"New\",\"priority\":\"High\",\"project_id\":{{project_id}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/defects/",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""]
+            }
+          }
+        },
+        {
+          "name": "3.2 Get All Defects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""]
+            }
+          }
+        },
+        {
+          "name": "3.3 Get Defect by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Defect ID matches\", () => pm.expect(pm.response.json().id).to.eql(parseInt(pm.collectionVariables.get('defect_id'))));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/{{defect_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["defects", "{{defect_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Update Defect Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Status updated\", () => pm.expect(pm.response.json().status).to.eql('In Progress'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Foundation crack\",\"description\":\"Work started\",\"status\":\"In Progress\",\"priority\":\"High\",\"project_id\":{{project_id}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/defects/{{defect_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["defects", "{{defect_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Get Defects by Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/?project_id={{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""],
+              "query": [{"key": "project_id", "value": "{{project_id}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. INTEGRATION TESTS",
+      "item": [
+        {
+          "name": "4.1 Full Lifecycle Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Data is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/",
+              "host": ["{{base_url}}"],
+              "path": ["projects", ""]
+            }
+          }
+        },
+        {
+          "name": "4.2 Security Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/defects/",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. USER STORIES",
+      "item": [
+        {
+          "name": "5.1 User Story: Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has username\", () => pm.expect(pm.response.json()).to.have.property('username'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/auth/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "5.2 User Story: Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Projects is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/",
+              "host": ["{{base_url}}"],
+              "path": ["projects", ""]
+            }
+          }
+        },
+        {
+          "name": "5.3 User Story: Defects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Defects is array\", () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. PERFORMANCE TESTS",
+      "item": [
+        {
+          "name": "6.1 Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response is JSON\", () => pm.response.to.be.json);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Get Projects Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Time ≤ 1s\", () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/",
+              "host": ["{{base_url}}"],
+              "path": ["projects", ""]
+            }
+          }
+        },
+        {
+          "name": "6.3 Get Defects Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Time ≤ 1s\", () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/",
+              "host": ["{{base_url}}"],
+              "path": ["defects", ""]
+            }
+          }
+        },
+        {
+          "name": "6.4 Get Single Project Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Time ≤ 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "6.5 Get Single Defect Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Time ≤ 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/defects/{{defect_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["defects", "{{defect_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
