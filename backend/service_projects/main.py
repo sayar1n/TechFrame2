@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import crud, models, schemas
 from database import engine, SessionLocal
+from events import publish_project_created, publish_project_updated, publish_project_deleted
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,17 @@ async def read_project(project_id: int, db: Session = Depends(get_db), current_u
 
 @app.post("/projects/", response_model=schemas.Project)
 async def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    return crud.create_project(db=db, project=project, owner_id=current_user["id"])
+    # Создаём проект
+    new_project = crud.create_project(db=db, project=project, owner_id=current_user["id"])
+    
+    # Публикуем событие "создан заказ"
+    publish_project_created(
+        project_id=new_project.id,
+        name=new_project.name,
+        owner_id=current_user["id"]
+    )
+    
+    return new_project
 
 @app.put("/projects/{project_id}", response_model=schemas.Project)
 async def update_project(project_id: int, project: schemas.ProjectCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
@@ -85,7 +96,18 @@ async def update_project(project_id: int, project: schemas.ProjectCreate, db: Se
         raise HTTPException(status_code=404, detail="Project not found")
     if db_project.owner_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
-    return crud.update_project(db=db, project_id=project_id, project=project)
+    
+    # Обновляем проект
+    updated_project = crud.update_project(db=db, project_id=project_id, project=project)
+    
+    # Публикуем событие "обновлён заказ"
+    publish_project_updated(
+        project_id=project_id,
+        name=updated_project.name,
+        updated_by=current_user["id"]
+    )
+    
+    return updated_project
 
 @app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(project_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
@@ -94,7 +116,16 @@ async def delete_project(project_id: int, db: Session = Depends(get_db), current
         raise HTTPException(status_code=404, detail="Project not found")
     if db_project.owner_id != current_user["id"] and current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Удаляем проект
     crud.delete_project(db=db, project_id=project_id)
+    
+    # Публикуем событие "удалён заказ"
+    publish_project_deleted(
+        project_id=project_id,
+        deleted_by=current_user["id"]
+    )
+    
     return
 
 @app.get("/health")

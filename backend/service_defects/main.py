@@ -13,6 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import crud, models, schemas
 from database import engine, SessionLocal
+from events import publish_defect_created, publish_defect_status_changed, publish_defect_updated, publish_defect_deleted
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,20 @@ async def read_defect(defect_id: int, db: Session = Depends(get_db), current_use
 
 @app.post("/defects/", response_model=schemas.Defect)
 async def create_defect(defect: schemas.DefectCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    return crud.create_defect(db=db, defect=defect, reporter_id=current_user["id"])
+    # Создаём дефект
+    new_defect = crud.create_defect(db=db, defect=defect, reporter_id=current_user["id"])
+    
+    # Публикуем событие "создан заказ"
+    publish_defect_created(
+        defect_id=new_defect.id,
+        title=new_defect.title,
+        status=new_defect.status,
+        priority=new_defect.priority,
+        project_id=new_defect.project_id,
+        reporter_id=current_user["id"]
+    )
+    
+    return new_defect
 
 @app.put("/defects/{defect_id}", response_model=schemas.Defect)
 async def update_defect(defect_id: int, defect: schemas.DefectCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
@@ -87,7 +101,30 @@ async def update_defect(defect_id: int, defect: schemas.DefectCreate, db: Sessio
         raise HTTPException(status_code=404, detail="Defect not found")
     if db_defect.reporter_id != current_user["id"] and current_user["role"] not in ["manager", "admin"]:
         raise HTTPException(status_code=403, detail="Not authorized")
-    return crud.update_defect(db=db, defect_id=defect_id, defect=defect)
+    
+    # Сохраняем старый статус для события
+    old_status = db_defect.status
+    
+    # Обновляем дефект
+    updated_defect = crud.update_defect(db=db, defect_id=defect_id, defect=defect)
+    
+    # Если статус изменился, публикуем событие "обновлён статус"
+    if old_status != updated_defect.status:
+        publish_defect_status_changed(
+            defect_id=defect_id,
+            old_status=old_status,
+            new_status=updated_defect.status,
+            changed_by=current_user["id"]
+        )
+    
+    # Публикуем событие "обновлён заказ"
+    publish_defect_updated(
+        defect_id=defect_id,
+        title=updated_defect.title,
+        updated_by=current_user["id"]
+    )
+    
+    return updated_defect
 
 @app.delete("/defects/{defect_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_defect(defect_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
