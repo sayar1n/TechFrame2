@@ -1,14 +1,30 @@
 openapi: 3.0.3
 info:
-  title: Construction Task Backend API
+  title: Construction Management System API
+  description: |
+    Базовое API для аутентификации и управления пользователями.
+    
+    **Основные функции:**
+    - Регистрация пользователя
+    - Получение JWT токена (вход)
+    - Получение информации о пользователе по токену
+    - Список всех пользователей
+    
+    **Авторизация:** JWT Bearer токен
   version: 1.0.0
+  contact:
+    name: API Support
+    email: support@construction.example.com
 servers:
   - url: http://localhost:8000
     description: API Gateway
 paths:
-  /users/register:
+  /v1/auth/register:
     post:
-      summary: Register user
+      tags:
+        - Аутентификация
+      summary: Регистрация
+      description: Создать нового пользователя (по умолчанию роль "observer")
       requestBody:
         required: true
         content:
@@ -16,116 +32,164 @@ paths:
             schema:
               type: object
               properties:
-                email: { type: string, format: email }
-                password: { type: string, minLength: 6 }
-                name: { type: string }
-              required: [email, password, name]
+                username:
+                  type: string
+                  example: "testuser"
+                email:
+                  type: string
+                  format: email
+                  example: "test@example.com"
+                password:
+                  type: string
+                  example: "password123"
+              required: [username, email, password]
       responses:
         '200':
-          description: Registered
+          description: Успешная регистрация
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      email: { type: string }
-                      name: { type: string }
-                      roles: { type: array, items: { type: string } }
+                $ref: '#/components/schemas/User'
         '400':
-          description: Email taken
-  /users/login:
-    post:
-      summary: Login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string }
-                password: { type: string }
-              required: [email, password]
-      responses:
-        '200':
-          description: Token
+          description: Пользователь уже существует
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      access_token: { type: string }
-                      token_type: { type: string }
-  /users/me:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /v1/auth/token:
+    post:
+      tags:
+        - Аутентификация
+      summary: Получить токен
+      description: Вход в систему - получить JWT токен по username и password
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "testuser"
+                password:
+                  type: string
+                  example: "password123"
+              required: [username, password]
+      responses:
+        '200':
+          description: Токен выдан успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Неверный username или password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/auth/users/me:
     get:
-      summary: Current user
+      tags:
+        - Пользователи
+      summary: Получить мой профиль
+      description: Получить информацию о текущем пользователе по токену
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: User profile
-    put:
-      summary: Update profile
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name: { type: string }
-      responses:
-        '200': { description: Updated }
-  /admin/users:
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Не авторизован (невалидный токен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/auth/users:
     get:
-      summary: List users (admin)
+      tags:
+        - Пользователи
+      summary: Список пользователей
+      description: Получить список всех пользователей системы
       security:
         - bearerAuth: []
       parameters:
         - in: query
-          name: page
-          schema: { type: integer, default: 1 }
-        - in: query
-          name: size
-          schema: { type: integer, default: 10 }
-        - in: query
-          name: q
-          schema: { type: string }
-      responses:
-        '200': { description: List }
-  /orders:
-    get:
-      summary: List orders
-      security:
-        - bearerAuth: []
-      parameters:
+          name: skip
+          schema:
+            type: integer
+            default: 0
+          description: Пропустить N записей
         - in: query
           name: limit
-          schema: { type: integer, default: 20 }
-        - in: query
-          name: offset
-          schema: { type: integer, default: 0 }
-        - in: query
-          name: sort
-          schema: { type: string, enum: [created_at, total_amount, status] }
-        - in: query
-          name: order
-          schema: { type: string, enum: [asc, desc], default: desc }
+          schema:
+            type: integer
+            default: 100
+          description: Максимум записей
       responses:
-        '200': { description: List }
+        '200':
+          description: Массив пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  # ========== PROJECTS ==========
+  /v1/projects/:
+    get:
+      tags:
+        - Проекты
+      summary: Список проектов
+      description: Получить список всех проектов пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Массив проектов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
     post:
-      summary: Create order
+      tags:
+        - Проекты
+      summary: Создать проект
+      description: Создать новый проект
       security:
         - bearerAuth: []
       requestBody:
@@ -133,34 +197,152 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                items:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      product: { type: string }
-                      quantity: { type: integer }
-                      price: { type: number }
-                  minItems: 1
+              $ref: '#/components/schemas/ProjectCreate'
       responses:
-        '200': { description: Created }
-  /orders/{order_id}:
+        '200':
+          description: Проект создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  
+  /v1/projects/{project_id}:
     get:
-      summary: Get order
+      tags:
+        - Проекты
+      summary: Получить проект
+      description: Получить информацию о проекте по ID
       security:
         - bearerAuth: []
       parameters:
         - in: path
-          name: order_id
+          name: project_id
           required: true
-          schema: { type: string }
+          schema:
+            type: integer
+          description: ID проекта
       responses:
-        '200': { description: Order }
-  /orders/{order_id}/status:
+        '200':
+          description: Данные проекта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
     put:
-      summary: Update status
+      tags:
+        - Проекты
+      summary: Обновить проект
+      description: Обновить информацию о проекте
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '200':
+          description: Проект обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    delete:
+      tags:
+        - Проекты
+      summary: Удалить проект
+      description: Удалить проект (только owner/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Проект удален
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Project deleted"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  
+  # ========== DEFECTS ==========
+  /v1/defects/:
+    get:
+      tags:
+        - Дефекты
+      summary: Список дефектов
+      description: Получить список дефектов (с фильтрацией по project_id)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: project_id
+          schema:
+            type: integer
+          description: Фильтр по проекту
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Массив дефектов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Defect'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
+    post:
+      tags:
+        - Дефекты
+      summary: Создать дефект
+      description: Создать новый дефект в проекте
       security:
         - bearerAuth: []
       requestBody:
@@ -168,23 +350,539 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: [created, in_progress, completed, cancelled]
+              $ref: '#/components/schemas/DefectCreate'
       responses:
-        '200': { description: Updated }
-  /orders/{order_id}/cancel:
-    post:
-      summary: Cancel order
+        '200':
+          description: Дефект создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  
+  /v1/defects/{defect_id}:
+    get:
+      tags:
+        - Дефекты
+      summary: Получить дефект
+      description: Получить информацию о дефекте по ID
       security:
         - bearerAuth: []
+      parameters:
+        - in: path
+          name: defect_id
+          required: true
+          schema:
+            type: integer
       responses:
-        '200': { description: Cancelled }
+        '200':
+          description: Данные дефекта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    put:
+      tags:
+        - Дефекты
+      summary: Обновить дефект (PUT)
+      description: Полное обновление дефекта
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: defect_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectCreate'
+      responses:
+        '200':
+          description: Дефект обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    patch:
+      tags:
+        - Дефекты
+      summary: Обновить дефект (PATCH)
+      description: Частичное обновление дефекта (например, изменить статус)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: defect_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DefectCreate'
+      responses:
+        '200':
+          description: Дефект обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Defect'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    delete:
+      tags:
+        - Дефекты
+      summary: Удалить дефект
+      description: Удалить дефект (только reporter/manager/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: defect_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Дефект удален
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Defect deleted"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  
+  # ========== REPORTS ==========
+  /v1/reports/defects-by-status:
+    get:
+      tags:
+        - Отчеты
+      summary: Дефекты по статусам
+      description: Статистика дефектов по статусам (для project_id)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: project_id
+          required: true
+          schema:
+            type: integer
+          description: ID проекта
+      responses:
+        '200':
+          description: Статистика по статусам
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  "New": 5
+                  "In Progress": 3
+                  "Resolved": 10
+                  "Closed": 2
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  
+  /v1/reports/defects-by-priority:
+    get:
+      tags:
+        - Отчеты
+      summary: Дефекты по приоритетам
+      description: Статистика дефектов по приоритетам (для project_id)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Статистика по приоритетам
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                example:
+                  "High": 8
+                  "Medium": 10
+                  "Low": 2
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT токен, полученный через /v1/auth/token
+  
+  schemas:
+    # ============ User Schema ============
+    User:
+      type: object
+      description: Модель пользователя системы
+      properties:
+        id:
+          type: integer
+          description: Уникальный ID пользователя
+          example: 1
+        username:
+          type: string
+          description: Имя пользователя
+          example: "testuser"
+        email:
+          type: string
+          format: email
+          description: Email адрес
+          example: "test@example.com"
+        role:
+          type: string
+          enum: [admin, manager, engineer, observer]
+          description: Роль пользователя в системе
+          example: "engineer"
+        is_active:
+          type: boolean
+          description: Активен ли аккаунт
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания аккаунта
+          example: "2025-12-03T10:30:00Z"
+      required:
+        - id
+        - username
+        - email
+        - role
+        - is_active
+        - created_at
+    
+    # ============ Token Schema ============
+    Token:
+      type: object
+      description: JWT токен для авторизации
+      properties:
+        access_token:
+          type: string
+          description: JWT токен для использования в заголовке Authorization
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsInVzZXJfaWQiOjEsInJvbGUiOiJlbmdpbmVlciIsImV4cCI6MTczNTY4OTYwMH0.xxx"
+        token_type:
+          type: string
+          description: Тип токена (всегда "bearer")
+          example: "bearer"
+      required:
+        - access_token
+        - token_type
+    
+    # ============ Error Schemas ============
+    ErrorResponse:
+      type: object
+      description: Стандартный формат ошибки
+      properties:
+        detail:
+          type: string
+          description: Описание ошибки
+          example: "Not authorized"
+      required:
+        - detail
+    
+    ValidationError:
+      type: object
+      description: Ошибка валидации данных (Pydantic)
+      properties:
+        detail:
+          type: array
+          description: Массив ошибок валидации
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                description: Путь к полю с ошибкой
+                example: ["body", "email"]
+              msg:
+                type: string
+                description: Сообщение об ошибке
+                example: "value is not a valid email address"
+              type:
+                type: string
+                description: Тип ошибки
+                example: "value_error.email"
+            required:
+              - loc
+              - msg
+              - type
+      required:
+        - detail
+      example:
+        detail:
+          - loc: ["body", "email"]
+            msg: "value is not a valid email address"
+            type: "value_error.email"
+          - loc: ["body", "password"]
+            msg: "ensure this value has at least 6 characters"
+            type: "value_error.any_str.min_length"
+    
+    # ============ Project Schemas ============
+    Project:
+      type: object
+      description: Проект строительства
+      properties:
+        id:
+          type: integer
+          description: ID проекта
+          example: 1
+        title:
+          type: string
+          description: Название проекта
+          example: "Строительство жилого комплекса"
+        description:
+          type: string
+          nullable: true
+          description: Описание проекта
+          example: "Многоквартирный дом на 150 квартир"
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Дата начала
+          example: "2025-01-15"
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Планируемая дата завершения
+          example: "2026-12-31"
+        owner_id:
+          type: integer
+          description: ID владельца проекта
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания записи
+          example: "2025-12-03T10:30:00Z"
+      required:
+        - id
+        - title
+        - owner_id
+        - created_at
+    
+    ProjectCreate:
+      type: object
+      description: Данные для создания/обновления проекта
+      properties:
+        title:
+          type: string
+          description: Название проекта
+          example: "Строительство жилого комплекса"
+        description:
+          type: string
+          nullable: true
+          description: Описание проекта
+          example: "Многоквартирный дом на 150 квартир"
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Дата начала
+          example: "2025-01-15"
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Планируемая дата завершения
+          example: "2026-12-31"
+      required:
+        - title
+    
+    # ============ Defect Schemas ============
+    Defect:
+      type: object
+      description: Дефект в проекте
+      properties:
+        id:
+          type: integer
+          description: ID дефекта
+          example: 1
+        project_id:
+          type: integer
+          description: ID проекта, к которому относится дефект
+          example: 1
+        title:
+          type: string
+          description: Название дефекта
+          example: "Трещина в стене"
+        description:
+          type: string
+          nullable: true
+          description: Подробное описание
+          example: "Обнаружена трещина на 5 этаже"
+        status:
+          type: string
+          enum: [New, In Progress, Resolved, Closed]
+          description: Статус дефекта
+          example: "New"
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+          description: Приоритет
+          example: "High"
+        reporter_id:
+          type: integer
+          description: ID пользователя, создавшего дефект
+          example: 2
+        assignee_id:
+          type: integer
+          nullable: true
+          description: ID исполнителя (кому назначен дефект)
+          example: 3
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: Срок устранения
+          example: "2025-12-15"
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания
+          example: "2025-12-03T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата последнего обновления
+          example: "2025-12-03T12:00:00Z"
+      required:
+        - id
+        - project_id
+        - title
+        - status
+        - priority
+        - reporter_id
+        - created_at
+    
+    DefectCreate:
+      type: object
+      description: Данные для создания/обновления дефекта
+      properties:
+        project_id:
+          type: integer
+          description: ID проекта
+          example: 1
+        title:
+          type: string
+          description: Название дефекта
+          example: "Трещина в стене"
+        description:
+          type: string
+          nullable: true
+          description: Подробное описание
+          example: "Обнаружена трещина на 5 этаже"
+        status:
+          type: string
+          enum: [New, In Progress, Resolved, Closed]
+          description: Статус дефекта
+          example: "New"
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+          description: Приоритет
+          example: "High"
+        assignee_id:
+          type: integer
+          nullable: true
+          description: ID исполнителя
+          example: 3
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: Срок устранения
+          example: "2025-12-15"
+      required:
+        - project_id
+        - title
+        - status
+        - priority
+  
+  # ============ Reusable Responses ============
+  responses:
+    UnauthorizedError:
+      description: Не авторизован (невалидный токен)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Not authorized"
+    
+    ForbiddenError:
+      description: Доступ запрещен (недостаточно прав)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Not authorized"
+    
+    NotFoundError:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Resource not found"
+    
+    ValidationError:
+      description: Ошибка валидации входных данных
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'

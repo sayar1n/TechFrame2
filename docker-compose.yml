@@ -13,6 +13,8 @@ services:
       - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
       - SECRET_KEY=${SECRET_KEY}
       - JWT_ALG=${JWT_ALG}
+    volumes:
+      - ./docs:/app/docs
     depends_on:
       - auth-service
       - projects-service
